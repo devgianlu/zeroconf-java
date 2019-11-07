@@ -34,12 +34,13 @@ class Record {
             char c = i == len ? '.' : name.charAt(i);
             if (c == '.') {
                 out.put((byte) (i - start));
-                for (int j = start; j < i; j++) {
+                for (int j = start; j < i; j++)
                     out.put((byte) name.charAt(j));
-                }
+
                 start = i + 1;
             }
         }
+
         out.put((byte) 0);
         return name.length() + 2;
     }
@@ -49,18 +50,12 @@ class Record {
         int len;
         while ((len = (in.get() & 0xFF)) > 0) {
             if (len < 0x40) {
-                if (sb.length() > 0) {
-                    sb.append('.');
-                }
-                while (len-- > 0) {
-                    sb.append((char) (in.get() & 0xFF));
-                }
+                if (sb.length() > 0) sb.append('.');
+                while (len-- > 0) sb.append((char) (in.get() & 0xFF));
             } else {
                 int off = ((len & 0x3F) << 8) | (in.get() & 0xFF);       // Offset from start of packet
                 len = (in.get(off++) & 0xFF);
-                while (len-- > 0) {
-                    sb.append((char) (in.get(off++) & 0xFF));
-                }
+                while (len-- > 0) sb.append((char) (in.get(off++) & 0xFF));
                 break;
             }
         }
@@ -163,11 +158,7 @@ class Record {
         int pos = out.position();
         out.putShort((short) 0);
         int len = writeData(out, packet);
-        if (len > 0) {
-            out.putShort(pos, (short) len);
-        } else {
-            out.position(pos);
-        }
+        if (len > 0) out.putShort(pos, (short) len);
+        else out.position(pos);
     }
-
 }

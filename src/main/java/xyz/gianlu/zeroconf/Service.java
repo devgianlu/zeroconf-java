@@ -47,6 +47,18 @@ public class Service {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Service{" +
+                "alias='" + alias + '\'' +
+                ", service='" + service + '\'' +
+                ", port=" + port +
+                ", domain='" + domain + '\'' +
+                ", protocol='" + protocol + '\'' +
+                ", host='" + host + '\'' +
+                '}';
+    }
+
     /**
      * Set the protocol, which can be one of "tcp" (the default) or "udp"
      *

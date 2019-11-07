@@ -10,6 +10,7 @@ public class Main {
         Service service = zeroconf.newService("MyWeb", "http", 8080)
                 .putText("path", "/path/toservice").announce();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(service::cancel));
         System.out.println(service);
     }
 }

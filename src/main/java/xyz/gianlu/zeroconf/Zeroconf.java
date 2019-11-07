@@ -448,7 +448,7 @@ public class Zeroconf {
 
     /**
      * The thread that listens to one or more Multicast DatagramChannels using a Selector,
-     * waiting for incoming packets. This wait can be also interuppted and a packet sent.
+     * waiting for incoming packets. This wait can be also interrupted and a packet sent.
      */
     private class ListenerThread extends Thread {
         private volatile boolean cancelled;
@@ -458,16 +458,14 @@ public class Zeroconf {
         private Selector selector;
 
         ListenerThread() {
-            setDaemon(true);
+            setDaemon(false);
             sendq = new ArrayDeque<>();
             channels = new HashMap<>();
             localaddresses = new HashMap<>();
         }
 
         private synchronized Selector getSelector() throws IOException {
-            if (selector == null) {
-                selector = Selector.open();
-            }
+            if (selector == null) selector = Selector.open();
             return selector;
         }
 
@@ -478,9 +476,7 @@ public class Zeroconf {
             this.cancelled = true;
             if (selector != null) {
                 selector.wakeup();
-                if (isAlive()) {
-                    join();
-                }
+                if (isAlive()) join();
             }
         }
 
@@ -551,9 +547,8 @@ public class Zeroconf {
             List<InetAddress> list = new ArrayList<>();
             for (List<InetAddress> pernic : localaddresses.values()) {
                 for (InetAddress address : pernic) {
-                    if (!list.contains(address)) {
+                    if (!list.contains(address))
                         list.add(address);
-                    }
                 }
             }
             return list;
@@ -571,21 +566,17 @@ public class Zeroconf {
                         buf.clear();
                         packet.write(buf);
                         buf.flip();
-                        for (PacketListener listener : sendlisteners) {
+                        for (PacketListener listener : sendlisteners)
                             listener.packetEvent(packet);
-                        }
+
                         for (SelectionKey key : channels.values()) {
                             DatagramChannel channel = (DatagramChannel) key.channel();
                             InetSocketAddress address = packet.getAddress();
                             if (address != null) {
                                 channel.send(buf, address);
                             } else {
-                                if (useipv4) {
-                                    channel.send(buf, BROADCAST4);
-                                }
-                                if (useipv6) {
-                                    channel.send(buf, BROADCAST6);
-                                }
+                                if (useipv4) channel.send(buf, BROADCAST4);
+                                if (useipv6) channel.send(buf, BROADCAST6);
                             }
                         }
                     }
@@ -602,9 +593,8 @@ public class Zeroconf {
                             buf.flip();
                             packet = new Packet();
                             packet.read(buf, address);
-                            for (PacketListener listener : receivelisteners) {
+                            for (PacketListener listener : receivelisteners)
                                 listener.packetEvent(packet);
-                            }
                             sendResponse(packet);
                         }
                     }
@@ -615,5 +605,4 @@ public class Zeroconf {
             }
         }
     }
-
 }

@@ -1,8 +1,9 @@
 package xyz.gianlu.zeroconf;
 
-import java.io.*;
-import java.nio.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
 
 class RecordA extends Record {
 
@@ -19,12 +20,14 @@ class RecordA extends Record {
         this.address = address.getAddress();
     }
 
-    @Override protected void readData(int len, ByteBuffer in) {
+    @Override
+    protected void readData(int len, ByteBuffer in) {
         address = new byte[len];
         in.get(address);
     }
 
-    @Override protected int writeData(ByteBuffer out, Packet packet) {
+    @Override
+    protected int writeData(ByteBuffer out, Packet packet) {
         if (address != null) {
             out.put(address);
             return address.length;
@@ -35,14 +38,14 @@ class RecordA extends Record {
 
     public Inet4Address getAddress() {
         try {
-            return address == null ? null : (Inet4Address)InetAddress.getByAddress(address);
+            return address == null ? null : (Inet4Address) InetAddress.getByAddress(address);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public String toString() {
-        return "{type:a, name:\""+getName()+"\", address:\""+getAddress()+"\"}";
+        return "{type:a, name:\"" + getName() + "\", address:\"" + getAddress() + "\"}";
     }
 }
 

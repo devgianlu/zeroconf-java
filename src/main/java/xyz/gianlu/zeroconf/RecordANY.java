@@ -1,6 +1,6 @@
 package xyz.gianlu.zeroconf;
 
-import java.nio.*;
+import java.nio.ByteBuffer;
 
 class RecordANY extends Record {
 
@@ -13,16 +13,18 @@ class RecordANY extends Record {
         setName(name);
     }
 
-    @Override protected void readData(int len, ByteBuffer in) {
+    @Override
+    protected void readData(int len, ByteBuffer in) {
         throw new IllegalStateException();
     }
 
-    @Override protected int writeData(ByteBuffer out, Packet packet) {
+    @Override
+    protected int writeData(ByteBuffer out, Packet packet) {
         return -1;
     }
 
     public String toString() {
-        return "{type:any, name:\""+getName()+"\"}";
+        return "{type:any, name:\"" + getName() + "\"}";
     }
 }
 

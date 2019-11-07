@@ -7,10 +7,11 @@ public class Main {
     public static void main(String[] args) throws IOException {
         Zeroconf zeroconf = new Zeroconf();
         zeroconf.addAllNetworkInterfaces();
-        Service service = zeroconf.newService("MyWeb", "http", 8080)
-                .putText("path", "/path/toservice").announce();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(service::cancel));
-        System.out.println(service);
+        Service service = new Service("MyWeb", "http", 8080)
+                .putText("path", "/path/toservice");
+
+        zeroconf.announce(service);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> zeroconf.unannounce(service)));
     }
 }

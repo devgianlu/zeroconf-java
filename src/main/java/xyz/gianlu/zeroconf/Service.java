@@ -1,29 +1,31 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
- * Service represents a Service to be announced by the Zeroconf class. It is created
- * by the {@link Zeroconf#newService Zeroconf.newService()} method.
+ * Service represents a Service to be announced by the Zeroconf class.
  */
-public class Service {
-    private final Zeroconf zeroconf;
+@SuppressWarnings({"unused", "WeakerAccess"})
+public final class Service {
     private final String alias, service;
     private final int port;
+    private final Map<String, String> text;
+    private final List<InetAddress> addresses = new ArrayList<>();
     private String domain, protocol, host;
-    private Map<String, String> text;
-    private List<InetAddress> addresses;
-    private Packet packet;
-    private boolean done;
 
-    Service(Zeroconf zeroconf, String alias, String service, int port) {
-        this.zeroconf = zeroconf;
+    /**
+     * Create a new {@link Service} to be announced by this object.
+     *
+     * @param alias   the service alias, eg "My Web Server"
+     * @param service the service type, eg "http"
+     * @param port    the service port
+     */
+    Service(@NotNull String alias, @NotNull String service, int port) {
         this.alias = alias;
         for (int i = 0; i < alias.length(); i++) {
             char c = alias.charAt(i);
@@ -34,8 +36,6 @@ public class Service {
         this.service = service;
         this.port = port;
         this.protocol = "tcp";
-        this.domain = zeroconf.getDomain();
-        this.host = zeroconf.getLocalHostName();
         this.text = new LinkedHashMap<>();
     }
 
@@ -65,13 +65,18 @@ public class Service {
      * @param protocol the protocol
      * @return this
      */
+    @NotNull
     public Service setProtocol(String protocol) {
-        if (packet != null) throw new IllegalStateException("Already announced");
-
         if ("tcp".equals(protocol) || "udp".equals(protocol)) this.protocol = protocol;
         else throw new IllegalArgumentException(protocol);
-
         return this;
+    }
+
+    /**
+     * @return the domain
+     */
+    public String getDomain() {
+        return domain;
     }
 
     /**
@@ -80,8 +85,8 @@ public class Service {
      * @param domain the domain
      * @return this
      */
+    @NotNull
     public Service setDomain(String domain) {
-        if (packet != null) throw new IllegalStateException("Already announced");
         if (domain == null || domain.length() < 2 || domain.charAt(0) != '.')
             throw new IllegalArgumentException(domain);
 
@@ -90,14 +95,21 @@ public class Service {
     }
 
     /**
-     * Set the host which is hosting this Service, which defaults to {@link Zeroconf#getLocalHostName}.
+     * @return the host
+     */
+    public String getHost() {
+        return host;
+    }
+
+    /**
+     * Set the host which is hosting this service, which defaults to {@link Zeroconf#getLocalHostName}.
      * It is possible to announce a service on a non-local host
      *
      * @param host the host
      * @return this
      */
+    @NotNull
     public Service setHost(String host) {
-        if (packet != null) throw new IllegalStateException("Already announced");
         this.host = host;
         return this;
     }
@@ -109,9 +121,8 @@ public class Service {
      * @param text the text
      * @return this
      */
+    @NotNull
     public Service setText(String text) {
-        if (packet != null) throw new IllegalStateException("Already announced");
-
         this.text.clear();
         String[] q = text.split(", *");
         for (String s : q) {
@@ -130,8 +141,8 @@ public class Service {
      * @param text the text
      * @return this
      */
+    @NotNull
     public Service setText(Map<String, String> text) {
-        if (packet != null) throw new IllegalStateException("Already announced");
         this.text.clear();
         this.text.putAll(text);
         return this;
@@ -144,8 +155,8 @@ public class Service {
      * @param value the corresponding value.
      * @return this
      */
+    @NotNull
     public Service putText(String key, String value) {
-        if (packet != null) throw new IllegalStateException();
         this.text.put(key, value);
         return this;
     }
@@ -159,18 +170,29 @@ public class Service {
      * @param address the InetAddress this Service resides on
      * @return this
      */
-    public Service addAddress(InetAddress address) {
-        if (packet != null) throw new IllegalStateException();
-        if (addresses == null) addresses = new ArrayList<>();
+    @NotNull
+    public Service addAddress(@NotNull InetAddress address) {
         addresses.add(address);
         return this;
     }
 
+    @NotNull
+    public Service addAddresses(Collection<InetAddress> addresses) {
+        this.addresses.addAll(addresses);
+        return this;
+    }
+
     /**
-     * Return the Alias for this service, as set in the {@link Zeroconf#newService} method
-     *
+     * @return whether the service has addresses to announce
+     */
+    public boolean hasAddresses() {
+        return !addresses.isEmpty();
+    }
+
+    /**
      * @return the alias
      */
+    @NotNull
     public String getAlias() {
         return alias;
     }
@@ -181,6 +203,7 @@ public class Service {
      *
      * @return the instance name
      */
+    @NotNull
     public String getInstanceName() {
         StringBuilder sb = new StringBuilder();
         esc(alias, sb);
@@ -199,6 +222,7 @@ public class Service {
      *
      * @return the service name
      */
+    @NotNull
     public String getServiceName() {
         StringBuilder sb = new StringBuilder();
         sb.append('_');
@@ -209,52 +233,25 @@ public class Service {
         return sb.toString();
     }
 
+    @NotNull
     Packet getPacket() {
-        if (packet == null) {
-            packet = new Packet();
-            String fqdn = getInstanceName();
-            String ptrname = getServiceName();
-            String host = this.host;
+        Packet packet = new Packet();
+        String fqdn = getInstanceName();
+        String ptrname = getServiceName();
+        String host = this.host;
 
-            packet.addAnswer(new RecordPTR(ptrname, fqdn).setTTL(28800));
-            packet.addAnswer(new RecordSRV(fqdn, host, port).setTTL(120));
+        packet.addAnswer(new RecordPTR(ptrname, fqdn).setTTL(28800));
+        packet.addAnswer(new RecordSRV(fqdn, host, port).setTTL(120));
 
-            if (!text.isEmpty()) packet.addAnswer(new RecordTXT(fqdn, text));
+        if (!text.isEmpty()) packet.addAnswer(new RecordTXT(fqdn, text));
 
-            List<InetAddress> addresses = this.addresses;
-            if (addresses == null) addresses = zeroconf.getLocalAddresses();
-            for (InetAddress address : addresses) {
-                if (address instanceof Inet4Address)
-                    packet.addAnswer(new RecordA(host, (Inet4Address) address));
-                else if (address instanceof Inet6Address)
-                    packet.addAnswer(new RecordAAAA(host, (Inet6Address) address));
-            }
+        for (InetAddress address : addresses) {
+            if (address instanceof Inet4Address)
+                packet.addAnswer(new RecordA(host, (Inet4Address) address));
+            else if (address instanceof Inet6Address)
+                packet.addAnswer(new RecordAAAA(host, (Inet6Address) address));
         }
 
         return packet;
-    }
-
-    /**
-     * Announce this Service on the network. Services can be announced more than once, although I'm unsure
-     * if this is valid
-     *
-     * @return this
-     */
-    public Service announce() {
-        if (done) throw new IllegalStateException("Already Cancelled");
-        zeroconf.announce(this);
-        return this;
-    }
-
-    /**
-     * Cancel the announcement of this Service on the Network
-     *
-     * @return this
-     */
-    public Service cancel() {
-        if (done) throw new IllegalStateException("Already Cancelled");
-        zeroconf.unannounce(this);
-        done = true;
-        return this;
     }
 }

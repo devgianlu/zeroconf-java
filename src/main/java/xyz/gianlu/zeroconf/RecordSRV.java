@@ -1,6 +1,6 @@
 package xyz.gianlu.zeroconf;
 
-import java.nio.*;
+import java.nio.ByteBuffer;
 
 class RecordSRV extends Record {
 
@@ -18,18 +18,20 @@ class RecordSRV extends Record {
         this.port = port;
     }
 
-    @Override protected void readData(int len, ByteBuffer in) {
+    @Override
+    protected void readData(int len, ByteBuffer in) {
         priority = in.getShort() & 0xFFFF;
         weight = in.getShort() & 0xFFFF;
         port = in.getShort() & 0xFFFF;
         target = readName(in);
     }
 
-    @Override protected int writeData(ByteBuffer out, Packet packet) {
+    @Override
+    protected int writeData(ByteBuffer out, Packet packet) {
         if (target != null) {
-            out.putShort((short)priority);
-            out.putShort((short)weight);
-            out.putShort((short)port);
+            out.putShort((short) priority);
+            out.putShort((short) weight);
+            out.putShort((short) port);
             return 6 + writeName(target, out, packet);
         } else {
             return -1;

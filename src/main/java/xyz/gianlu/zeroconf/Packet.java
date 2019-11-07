@@ -6,17 +6,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A Service Dicovery Packet. This class is only of interest to developers.
+ * A Service Discovery Packet. This class is only of interest to developers.
  */
-public class Packet {
+class Packet {
     private static final int FLAG_RESPONSE = 15;
     private static final int FLAG_AA = 10;
     private int id;
     private int flags;
-    private List<Record> questions;
-    private List<Record> answers;
-    private List<Record> authorities;
-    private List<Record> additionals;
+    private final List<Record> questions;
+    private final List<Record> answers;
+    private final List<Record> authorities;
+    private final List<Record> additionals;
     private InetSocketAddress address;
 
     Packet() {
@@ -45,7 +45,7 @@ public class Packet {
     }
 
     /**
-     * Return true if it's a reponse, false if it's a query
+     * Return true if it's a response, false if it's a query
      */
     boolean isResponse() {
         return isFlag(FLAG_RESPONSE);

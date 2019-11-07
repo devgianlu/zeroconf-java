@@ -1,6 +1,6 @@
 package xyz.gianlu.zeroconf;
 
-import java.nio.*;
+import java.nio.ByteBuffer;
 
 class RecordPTR extends Record {
     private String value;
@@ -23,11 +23,13 @@ class RecordPTR extends Record {
         setName(name);
     }
 
-    @Override protected void readData(int len, ByteBuffer in) {
+    @Override
+    protected void readData(int len, ByteBuffer in) {
         value = readName(in);
     }
 
-    @Override protected int writeData(ByteBuffer out, Packet packet) {
+    @Override
+    protected int writeData(ByteBuffer out, Packet packet) {
         return value != null ? writeName(value, out, packet) : -1;
     }
 

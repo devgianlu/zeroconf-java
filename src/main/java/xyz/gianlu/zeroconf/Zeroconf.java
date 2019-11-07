@@ -1,5 +1,8 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -13,17 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>
- * This is the root class for the Service Discovery object. A typical use to publish a record is
- * </p>
- * <pre>
- * Zeroconf zeroconf = new Zeroconf();
- * zeroconf.addAllNetworkInterfaces();
- * Service service = zeroconf.newService("MyWeb", "http", 8080).putText("path", "/path/toservice").announce();
- * // time passes
- * service.cancel();
- * // time passes
- * zeroconf.close();
- * </pre>
+ * This is the root class for the Service Discovery object.
  * <p>
  * This class does not have any fancy hooks to clean up. The {@link #close} method should be called when the
  * class is to be discarded, but failing to do so won't break anything. Announced services will expire in
@@ -31,7 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * should refuse to republish any duplicate services.
  * </p>
  */
-public class Zeroconf {
+@SuppressWarnings({"unused", "WeakerAccess"})
+public final class Zeroconf implements Closeable {
     private static final String DISCOVERY = "_services._dns-sd._udp.local";
     private static final InetSocketAddress BROADCAST4, BROADCAST6;
 
@@ -44,44 +38,47 @@ public class Zeroconf {
         }
     }
 
-    private ListenerThread thread;
-    private boolean useipv4, useipv6;
+    private final ListenerThread thread;
+    private final boolean useIpv4, useIpv6;
+    private final List<Record> registry;
+    private final Collection<Service> services;
+    private final CopyOnWriteArrayList<PacketListener> receiveListeners;
+    private final CopyOnWriteArrayList<PacketListener> sendListeners;
     private String hostname, domain;
-    private InetAddress address;
-    private List<Record> registry;
-    private Collection<Service> serviceregistry;
-    private CopyOnWriteArrayList<PacketListener> receivelisteners;
-    private CopyOnWriteArrayList<PacketListener> sendlisteners;
-    private CopyOnWriteArrayList<InetAddress> localaddresses;
 
     /**
      * Create a new Zeroconf object
      */
     public Zeroconf() {
         setDomain(".local");
+
         try {
             setLocalHostName(InetAddress.getLocalHost().getHostName());
-        } catch (IOException e) {
+        } catch (IOException ex) {
             // Not worthy of an IOException
         }
-        useipv4 = true;
-        useipv6 = false;
-        receivelisteners = new CopyOnWriteArrayList<>();
-        sendlisteners = new CopyOnWriteArrayList<>();
+
+        useIpv4 = true;
+        useIpv6 = false;
+        receiveListeners = new CopyOnWriteArrayList<>();
+        sendListeners = new CopyOnWriteArrayList<>();
         thread = new ListenerThread();
         registry = new ArrayList<>();
-        serviceregistry = new HashSet<>();
+        services = new HashSet<>();
     }
 
     /**
      * Close down this Zeroconf object and cancel any services it has advertised.
-     *
-     * @throws InterruptedException if we couldn't rejoin the listener thread
      */
-    public void close() throws InterruptedException {
-        List<Service> list = new ArrayList<>(serviceregistry);
+    @Override
+    public void close() {
+        List<Service> list = new ArrayList<>(services);
         for (Service service : list) unannounce(service);
-        thread.close();
+
+        try {
+            thread.close();
+        } catch (InterruptedException ignored) {
+        }
     }
 
     /**
@@ -91,8 +88,9 @@ public class Zeroconf {
      * @param listener the listener
      * @return this Zeroconf
      */
-    public Zeroconf addReceiveListener(PacketListener listener) {
-        receivelisteners.addIfAbsent(listener);
+    @NotNull
+    public Zeroconf addReceiveListener(@NotNull PacketListener listener) {
+        receiveListeners.addIfAbsent(listener);
         return this;
     }
 
@@ -103,8 +101,9 @@ public class Zeroconf {
      * @param listener the listener
      * @return this Zeroconf
      */
-    public Zeroconf removeReceiveListener(PacketListener listener) {
-        receivelisteners.remove(listener);
+    @NotNull
+    public Zeroconf removeReceiveListener(@NotNull PacketListener listener) {
+        receiveListeners.remove(listener);
         return this;
     }
 
@@ -115,8 +114,9 @@ public class Zeroconf {
      * @param listener the listener
      * @return this Zeroconf
      */
-    public Zeroconf addSendListener(PacketListener listener) {
-        sendlisteners.addIfAbsent(listener);
+    @NotNull
+    public Zeroconf addSendListener(@NotNull PacketListener listener) {
+        sendListeners.addIfAbsent(listener);
         return this;
     }
 
@@ -127,8 +127,9 @@ public class Zeroconf {
      * @param listener the listener
      * @return this Zeroconf
      */
-    public Zeroconf removeSendListener(PacketListener listener) {
-        sendlisteners.remove(listener);
+    @NotNull
+    public Zeroconf removeSendListener(@NotNull PacketListener listener) {
+        sendListeners.remove(listener);
         return this;
     }
 
@@ -153,8 +154,8 @@ public class Zeroconf {
      * @return this
      * @throws IOException if something goes wrong in an I/O way
      */
-    public Zeroconf addNetworkInterface(NetworkInterface nic) throws IOException {
-        if (nic == null) throw new NullPointerException("NIC is null");
+    @NotNull
+    public Zeroconf addNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
         thread.addNetworkInterface(nic);
         return this;
     }
@@ -168,7 +169,8 @@ public class Zeroconf {
      * @return this
      * @throws IOException if something goes wrong in an I/O way
      */
-    public Zeroconf removeNetworkInterface(NetworkInterface nic) throws IOException {
+    @NotNull
+    public Zeroconf removeNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
         thread.removeNetworkInterface(nic);
         return this;
     }
@@ -184,6 +186,7 @@ public class Zeroconf {
      * @return this
      * @throws IOException if something goes wrong in an I/O way
      */
+    @NotNull
     public Zeroconf addAllNetworkInterfaces() throws IOException {
         for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e.hasMoreElements(); )
             addNetworkInterface(e.nextElement());
@@ -207,8 +210,8 @@ public class Zeroconf {
      * @param domain the domain
      * @return this
      */
-    public Zeroconf setDomain(String domain) {
-        if (domain == null) throw new NullPointerException("Domain cannot be null");
+    @NotNull
+    public Zeroconf setDomain(@NotNull String domain) {
         this.domain = domain;
         return this;
     }
@@ -229,8 +232,8 @@ public class Zeroconf {
      * @param name the hostname, which should be undotted
      * @return this
      */
-    public Zeroconf setLocalHostName(String name) {
-        if (name == null) throw new NullPointerException("Hostname cannot be null");
+    @NotNull
+    public Zeroconf setLocalHostName(@NotNull String name) {
         this.hostname = name;
         return this;
     }
@@ -250,7 +253,7 @@ public class Zeroconf {
     /**
      * Send a packet
      */
-    void send(Packet packet) {
+    public void send(Packet packet) {
         thread.push(packet);
     }
 
@@ -258,19 +261,19 @@ public class Zeroconf {
      * Return the registry of records. This is the list of DNS records that we will
      * automatically match any queries against. The returned list is live.
      */
-    List<Record> getRegistry() {
+    public List<Record> getRegistry() {
         return registry;
     }
 
     /**
-     * Return the list of all Services that have been {@link Service#announce announced}
+     * Return the list of all Services that have been {@link Zeroconf#announce} announced
      * by this object. The returned Collection is read-only and live, so will be updated
      * by this object.
      *
      * @return the Collection of announced Services
      */
     public Collection<Service> getAnnouncedServices() {
-        return Collections.unmodifiableCollection(serviceregistry);
+        return Collections.unmodifiableCollection(services);
     }
 
     /**
@@ -350,18 +353,6 @@ public class Zeroconf {
     }
 
     /**
-     * Create a new {@link Service} to be announced by this object.
-     *
-     * @param alias   the Service alias, eg "My Web Server"
-     * @param service the Service type, eg "http"
-     * @param port    the Service port.
-     * @return a {@link Service} which can be announced, after further modifications if necessary
-     */
-    public Service newService(String alias, String service, int port) {
-        return new Service(this, alias, service, port);
-    }
-
-    /**
      * Probe for a ZeroConf service with the specified name and return true if a matching
      * service is found.
      * <p>
@@ -421,13 +412,17 @@ public class Zeroconf {
      * Announce the service - probe to see if it already exists and fail if it does, otherwise
      * announce it
      */
-    void announce(Service service) {
+    public void announce(@NotNull Service service) {
+        if (service.getDomain() == null) service.setDomain(getDomain());
+        if (service.getHost() == null) service.setHost(getLocalHostName());
+        if (!service.hasAddresses()) service.addAddresses(getLocalAddresses());
+
         Packet packet = service.getPacket();
-        if (probe(service.getInstanceName())) {
+        if (probe(service.getInstanceName()))
             throw new IllegalArgumentException("Service " + service.getInstanceName() + " already on network");
-        }
+
         getRegistry().addAll(packet.getAnswers());
-        serviceregistry.add(service);
+        services.add(service);
         send(packet);
     }
 
@@ -435,15 +430,16 @@ public class Zeroconf {
      * Unannounce the service. Do this by re-announcing all our records but with a TTL of 0 to
      * ensure they expire. Then remove from the registry.
      */
-    void unannounce(Service service) {
+    public void unannounce(@NotNull Service service) {
         Packet packet = service.getPacket();
         getRegistry().removeAll(packet.getAnswers());
         for (Record r : packet.getAnswers()) {
             getRegistry().remove(r);
             r.setTTL(0);
         }
+
         send(packet);
-        serviceregistry.remove(service);
+        services.remove(service);
     }
 
     /**
@@ -451,17 +447,17 @@ public class Zeroconf {
      * waiting for incoming packets. This wait can be also interrupted and a packet sent.
      */
     private class ListenerThread extends Thread {
+        private final Deque<Packet> sendq;
+        private final Map<NetworkInterface, SelectionKey> channels;
+        private final Map<NetworkInterface, List<InetAddress>> localAddresses;
         private volatile boolean cancelled;
-        private Deque<Packet> sendq;
-        private Map<NetworkInterface, SelectionKey> channels;
-        private Map<NetworkInterface, List<InetAddress>> localaddresses;
         private Selector selector;
 
         ListenerThread() {
             setDaemon(false);
             sendq = new ArrayDeque<>();
             channels = new HashMap<>();
-            localaddresses = new HashMap<>();
+            localAddresses = new HashMap<>();
         }
 
         private synchronized Selector getSelector() throws IOException {
@@ -499,17 +495,17 @@ public class Zeroconf {
         }
 
         /**
-         * Add a NetworkInterface. Try to idenfity whether it's IPV4 or IPV6, or both. IPV4 tested,
+         * Add a NetworkInterface. Try to identify whether it's IPV4 or IPV6, or both. IPV4 tested,
          * IPV6 is not but at least it doesn't crash.
          */
-        public synchronized void addNetworkInterface(NetworkInterface nic) throws IOException {
+        public synchronized void addNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
             if (!channels.containsKey(nic) && nic.supportsMulticast() && nic.isUp() && !nic.isLoopback()) {
                 boolean ipv4 = false, ipv6 = false;
                 List<InetAddress> locallist = new ArrayList<>();
                 for (Enumeration<InetAddress> e = nic.getInetAddresses(); e.hasMoreElements(); ) {
                     InetAddress a = e.nextElement();
                     ipv4 |= a instanceof Inet4Address;
-                    ipv6 |= a instanceof Inet4Address;
+                    ipv6 |= a instanceof Inet6Address;
                     if (!a.isLoopbackAddress() && !a.isMulticastAddress())
                         locallist.add(a);
                 }
@@ -523,21 +519,20 @@ public class Zeroconf {
                     channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, nic);
                     channel.join(BROADCAST4.getAddress(), nic);
                 } else if (ipv6) {
-                    // TODO test
                     channel.bind(new InetSocketAddress(BROADCAST6.getPort()));
                     channel.join(BROADCAST6.getAddress(), nic);
                 }
 
                 channels.put(nic, channel.register(getSelector(), SelectionKey.OP_READ));
-                localaddresses.put(nic, locallist);
+                localAddresses.put(nic, locallist);
                 if (!isAlive()) start();
             }
         }
 
-        synchronized void removeNetworkInterface(NetworkInterface nic) throws IOException {
+        synchronized void removeNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
             SelectionKey key = channels.remove(nic);
             if (key != null) {
-                localaddresses.remove(nic);
+                localAddresses.remove(nic);
                 key.channel().close();
                 getSelector().wakeup();
             }
@@ -545,12 +540,13 @@ public class Zeroconf {
 
         synchronized List<InetAddress> getLocalAddresses() {
             List<InetAddress> list = new ArrayList<>();
-            for (List<InetAddress> pernic : localaddresses.values()) {
+            for (List<InetAddress> pernic : localAddresses.values()) {
                 for (InetAddress address : pernic) {
                     if (!list.contains(address))
                         list.add(address);
                 }
             }
+
             return list;
         }
 
@@ -566,7 +562,7 @@ public class Zeroconf {
                         buf.clear();
                         packet.write(buf);
                         buf.flip();
-                        for (PacketListener listener : sendlisteners)
+                        for (PacketListener listener : sendListeners)
                             listener.packetEvent(packet);
 
                         for (SelectionKey key : channels.values()) {
@@ -575,8 +571,8 @@ public class Zeroconf {
                             if (address != null) {
                                 channel.send(buf, address);
                             } else {
-                                if (useipv4) channel.send(buf, BROADCAST4);
-                                if (useipv6) channel.send(buf, BROADCAST6);
+                                if (useIpv4) channel.send(buf, BROADCAST4);
+                                if (useIpv6) channel.send(buf, BROADCAST6);
                             }
                         }
                     }
@@ -593,11 +589,12 @@ public class Zeroconf {
                             buf.flip();
                             packet = new Packet();
                             packet.read(buf, address);
-                            for (PacketListener listener : receivelisteners)
+                            for (PacketListener listener : receiveListeners)
                                 listener.packetEvent(packet);
                             sendResponse(packet);
                         }
                     }
+
                     selected.clear();
                 } catch (Exception e) {
                     e.printStackTrace();

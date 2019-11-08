@@ -1,5 +1,6 @@
 package xyz.gianlu.zeroconf;
 
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class Zeroconf implements Closeable {
     private static final String DISCOVERY = "_services._dns-sd._udp.local";
     private static final InetSocketAddress BROADCAST4, BROADCAST6;
+    private static final Logger LOGGER = Logger.getLogger(Zeroconf.class);
 
     static {
         try {
@@ -253,7 +255,7 @@ public final class Zeroconf implements Closeable {
     /**
      * Send a packet
      */
-    public void send(Packet packet) {
+    public void send(@NotNull Packet packet) {
         thread.push(packet);
     }
 
@@ -424,6 +426,8 @@ public final class Zeroconf implements Closeable {
         getRegistry().addAll(packet.getAnswers());
         services.add(service);
         send(packet);
+
+        LOGGER.info("Announced service. " + service);
     }
 
     /**
@@ -440,6 +444,8 @@ public final class Zeroconf implements Closeable {
 
         send(packet);
         services.remove(service);
+
+        LOGGER.info("Unannounced service. " + service);
     }
 
     /**
@@ -550,6 +556,7 @@ public final class Zeroconf implements Closeable {
             return list;
         }
 
+        @Override
         public void run() {
             ByteBuffer buf = ByteBuffer.allocate(65536);
             buf.order(ByteOrder.BIG_ENDIAN);
@@ -596,8 +603,8 @@ public final class Zeroconf implements Closeable {
                     }
 
                     selected.clear();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (Exception ex) {
+                    LOGGER.warn("Failed receiving/sending packet!", ex);
                 }
             }
         }

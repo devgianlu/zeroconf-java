@@ -53,6 +53,8 @@ public final class Service {
                 "alias='" + alias + '\'' +
                 ", service='" + service + '\'' +
                 ", port=" + port +
+                ", text=" + text +
+                ", addresses=" + addresses +
                 ", domain='" + domain + '\'' +
                 ", protocol='" + protocol + '\'' +
                 ", host='" + host + '\'' +

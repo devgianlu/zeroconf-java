@@ -4,12 +4,12 @@
 
     <groupId>xyz.gianlu.zeroconf</groupId>
     <artifactId>zeroconf</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
 
     <name>zeroconf-java</name>
     <description>A pure Java implementation of the Zeroconf technology</description>
 
-    <url>http://github.com/devgianlu/zeroconf-java</url>
+    <url>https://github.com/devgianlu/zeroconf-java</url>
 
     <licenses>
         <license>

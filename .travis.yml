@@ -25,6 +25,7 @@ deploy:
     - target/zeroconf-java-jar-with-dependencies.jar
   on:
     repo: devgianlu/zeroconf-java
+    branch: master
     tags: true
 
 cache:

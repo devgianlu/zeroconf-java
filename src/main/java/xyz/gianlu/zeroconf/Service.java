@@ -25,7 +25,7 @@ public final class Service {
      * @param service the service type, eg "http"
      * @param port    the service port
      */
-    Service(@NotNull String alias, @NotNull String service, int port) {
+    public Service(@NotNull String alias, @NotNull String service, int port) {
         this.alias = alias;
         for (int i = 0; i < alias.length(); i++) {
             char c = alias.charAt(i);
@@ -240,12 +240,10 @@ public final class Service {
         Packet packet = new Packet();
         String fqdn = getInstanceName();
         String ptrname = getServiceName();
-        String host = this.host;
 
         packet.addAnswer(new RecordPTR(ptrname, fqdn).setTTL(28800));
         packet.addAnswer(new RecordSRV(fqdn, host, port).setTTL(120));
-
-        if (!text.isEmpty()) packet.addAnswer(new RecordTXT(fqdn, text));
+        if (!text.isEmpty()) packet.addAnswer(new RecordTXT(fqdn, text).setTTL(120));
 
         for (InetAddress address : addresses) {
             if (address instanceof Inet4Address)

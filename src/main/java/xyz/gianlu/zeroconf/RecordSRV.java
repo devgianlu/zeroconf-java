@@ -1,9 +1,10 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 
 class RecordSRV extends Record {
-
     private int priority, weight, port;
     private String target;
 
@@ -54,6 +55,8 @@ class RecordSRV extends Record {
         return target;
     }
 
+    @Override
+    @NotNull
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{type:srv, name:\"");

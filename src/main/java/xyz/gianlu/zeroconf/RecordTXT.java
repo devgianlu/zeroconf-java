@@ -1,12 +1,13 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 class RecordTXT extends Record {
-
     private Map<String, String> values;
 
     RecordTXT() {
@@ -66,6 +67,8 @@ class RecordTXT extends Record {
         return values;
     }
 
+    @Override
+    @NotNull
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{type:text, name:\"");

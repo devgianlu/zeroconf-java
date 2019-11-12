@@ -1,5 +1,7 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 
 class RecordANY extends Record {
@@ -23,6 +25,8 @@ class RecordANY extends Record {
         return -1;
     }
 
+    @Override
+    @NotNull
     public String toString() {
         return "{type:any, name:\"" + getName() + "\"}";
     }

@@ -1,12 +1,13 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 class RecordA extends Record {
-
     private byte[] address;
 
     RecordA() {
@@ -44,6 +45,8 @@ class RecordA extends Record {
         }
     }
 
+    @Override
+    @NotNull
     public String toString() {
         return "{type:a, name:\"" + getName() + "\", address:\"" + getAddress() + "\"}";
     }

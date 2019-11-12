@@ -1,5 +1,7 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 
 class RecordPTR extends Record {
@@ -37,6 +39,8 @@ class RecordPTR extends Record {
         return value;
     }
 
+    @Override
+    @NotNull
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{type:ptr, name:\"");

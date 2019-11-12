@@ -1,5 +1,7 @@
 package xyz.gianlu.zeroconf;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * An interface that will be notified of a packet transmission
  *
@@ -7,5 +9,5 @@ package xyz.gianlu.zeroconf;
  * @see Zeroconf#addSendListener
  */
 public interface PacketListener {
-    void packetEvent(Packet packet);
+    void packetEvent(@NotNull Packet packet);
 }

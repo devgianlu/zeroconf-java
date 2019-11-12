@@ -8,15 +8,15 @@ import java.util.List;
 /**
  * A Service Discovery Packet. This class is only of interest to developers.
  */
-class Packet {
+public final class Packet {
     private static final int FLAG_RESPONSE = 15;
     private static final int FLAG_AA = 10;
-    private int id;
-    private int flags;
     private final List<Record> questions;
     private final List<Record> answers;
     private final List<Record> authorities;
     private final List<Record> additionals;
+    private int id;
+    private int flags;
     private InetSocketAddress address;
 
     Packet() {
@@ -115,8 +115,17 @@ class Packet {
         for (Record r : additionals) r.write(out, this);
     }
 
+    @Override
     public String toString() {
-        return "{id:" + id + ", flags:" + flags + ", questions:" + questions + ", answers:" + answers + "}";
+        return "Packet{" +
+                "id=" + id +
+                ", flags=" + flags +
+                ", questions=" + questions +
+                ", answers=" + answers +
+                ", authorities=" + authorities +
+                ", additionals=" + additionals +
+                ", address=" + address +
+                '}';
     }
 
     List<Record> getQuestions() {

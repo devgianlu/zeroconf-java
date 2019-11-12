@@ -162,6 +162,12 @@ public final class Zeroconf implements Closeable {
         return this;
     }
 
+    @NotNull
+    public Zeroconf addNetworkInterfaces(@NotNull Collection<NetworkInterface> nics) throws IOException {
+        for (NetworkInterface nic : nics) thread.addNetworkInterface(nic);
+        return this;
+    }
+
     /**
      * Remove a {@link #addNetworkInterface previously added} NetworkInterface from this
      * object's list. The addresses that were part of the interface at the time it was added
@@ -294,7 +300,7 @@ public final class Zeroconf implements Closeable {
      * <p>
      * At the end of all this, if we have at least one record, send it as a response
      */
-    private void sendResponse(Packet packet) {
+    private void handlePacket(@NotNull Packet packet) {
         Packet response = null;
         Set<String> targets = null;
         for (Record question : packet.getQuestions()) {
@@ -321,14 +327,16 @@ public final class Zeroconf implements Closeable {
                 // o The TXT record(s) named in the PTR rdata.
                 // o All address records (type "A" and "AAAA") named in the SRV rdata.
                 for (Record answer : response.getAnswers()) {
-                    if (answer.getType() == Record.TYPE_PTR) {
-                        for (Record record : getRegistry()) {
-                            if (record.getName().equals(answer.getName()) && (record.getType() == Record.TYPE_SRV || record.getType() == Record.TYPE_TXT)) {
-                                response.addAdditional(record);
-                                if (record instanceof RecordSRV) {
-                                    if (targets == null) targets = new HashSet<>();
-                                    targets.add(((RecordSRV) record).getTarget());
-                                }
+                    if (answer.getType() != Record.TYPE_PTR)
+                        continue;
+
+                    for (Record record : getRegistry()) {
+                        if (record.getName().equals(((RecordPTR) answer).getValue())
+                                && (record.getType() == Record.TYPE_SRV || record.getType() == Record.TYPE_TXT)) {
+                            response.addAdditional(record);
+                            if (record instanceof RecordSRV) {
+                                if (targets == null) targets = new HashSet<>();
+                                targets.add(((RecordSRV) record).getTarget());
                             }
                         }
                     }
@@ -460,6 +468,8 @@ public final class Zeroconf implements Closeable {
         private Selector selector;
 
         ListenerThread() {
+            super("zeroconf-io-thread");
+
             setDaemon(false);
             sendq = new ArrayDeque<>();
             channels = new HashMap<>();
@@ -598,7 +608,7 @@ public final class Zeroconf implements Closeable {
                             packet.read(buf, address);
                             for (PacketListener listener : receiveListeners)
                                 listener.packetEvent(packet);
-                            sendResponse(packet);
+                            handlePacket(packet);
                         }
                     }
 

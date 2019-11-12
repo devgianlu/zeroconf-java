@@ -97,7 +97,6 @@ class Record {
                 return new RecordTXT();
             case TYPE_ANY:
                 return new RecordANY();
-//                case TYPE_NSEC: return new RecordNSEC();
             default:
                 return new Record(type);
         }

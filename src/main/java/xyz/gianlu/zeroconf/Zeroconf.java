@@ -433,9 +433,17 @@ public final class Zeroconf implements Closeable {
 
         getRegistry().addAll(packet.getAnswers());
         services.add(service);
-        send(packet);
 
-        LOGGER.info("Announced service. " + service);
+        for (int i = 0; i < 3; i++) {
+            send(packet);
+
+            try {
+                Thread.sleep(225);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
+        LOGGER.info("Announced service: " + service);
     }
 
     /**
@@ -450,8 +458,17 @@ public final class Zeroconf implements Closeable {
             r.setTTL(0);
         }
 
-        send(packet);
         services.remove(service);
+
+        for (int i = 0; i < 3; i++) {
+            send(packet);
+
+            try {
+                Thread.sleep(125);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
 
         LOGGER.info("Unannounced service. " + service);
     }

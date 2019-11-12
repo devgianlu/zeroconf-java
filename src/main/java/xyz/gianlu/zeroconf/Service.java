@@ -238,6 +238,8 @@ public final class Service {
     @NotNull
     Packet getPacket() {
         Packet packet = new Packet();
+        packet.setAuthoritative(true);
+
         String fqdn = getInstanceName();
         String ptrname = getServiceName();
 

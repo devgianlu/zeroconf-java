@@ -4,7 +4,7 @@
 
     <groupId>xyz.gianlu.zeroconf</groupId>
     <artifactId>zeroconf</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <name>zeroconf-java</name>
     <description>A pure Java implementation of the Zeroconf technology</description>
@@ -57,6 +57,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
+                                    <mainClass>xyz.gianlu.zeroconf.Main</mainClass>
                                     <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                                     <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                                 </manifest>

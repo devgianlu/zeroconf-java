@@ -41,11 +41,12 @@ public final class Zeroconf implements Closeable {
     }
 
     private final ListenerThread thread;
-    private final boolean useIpv4, useIpv6;
     private final List<Record> registry;
     private final Collection<Service> services;
     private final CopyOnWriteArrayList<PacketListener> receiveListeners;
     private final CopyOnWriteArrayList<PacketListener> sendListeners;
+    private boolean useIpv4 = true;
+    private boolean useIpv6 = true;
     private String hostname, domain;
 
     /**
@@ -56,17 +57,26 @@ public final class Zeroconf implements Closeable {
 
         try {
             setLocalHostName(InetAddress.getLocalHost().getHostName());
-        } catch (IOException ex) {
-            // Not worthy of an IOException
+        } catch (IOException ignored) {
         }
 
-        useIpv4 = true;
-        useIpv6 = false;
         receiveListeners = new CopyOnWriteArrayList<>();
         sendListeners = new CopyOnWriteArrayList<>();
         thread = new ListenerThread();
         registry = new ArrayList<>();
         services = new HashSet<>();
+    }
+
+    @NotNull
+    public Zeroconf setUseIpv4(boolean ipv4) {
+        this.useIpv4 = ipv4;
+        return this;
+    }
+
+    @NotNull
+    public Zeroconf setUseIpv6(boolean ipv6) {
+        this.useIpv6 = ipv6;
+        return this;
     }
 
     /**
@@ -537,6 +547,9 @@ public final class Zeroconf implements Closeable {
                 List<InetAddress> locallist = new ArrayList<>();
                 for (Enumeration<InetAddress> e = nic.getInetAddresses(); e.hasMoreElements(); ) {
                     InetAddress a = e.nextElement();
+                    if ((a instanceof Inet4Address && !useIpv4) || (a instanceof Inet6Address && !useIpv6))
+                        continue;
+
                     ipv4 |= a instanceof Inet4Address;
                     ipv6 |= a instanceof Inet6Address;
                     if (!a.isLoopbackAddress() && !a.isMulticastAddress())

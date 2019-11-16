@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,6 +14,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -56,7 +58,7 @@ public final class Zeroconf implements Closeable {
         setDomain(".local");
 
         try {
-            setLocalHostName(InetAddress.getLocalHost().getHostName());
+            setLocalHostName(getOrCreateLocalHostName());
         } catch (IOException ignored) {
         }
 
@@ -65,6 +67,18 @@ public final class Zeroconf implements Closeable {
         thread = new ListenerThread();
         registry = new ArrayList<>();
         services = new HashSet<>();
+    }
+
+    @NotNull
+    public static String getOrCreateLocalHostName() throws UnknownHostException {
+        String host = InetAddress.getLocalHost().getHostName();
+        if (host.equals("localhost")) {
+            host = Base64.getEncoder().encodeToString(BigInteger.valueOf(ThreadLocalRandom.current().nextLong()).toByteArray()) + ".local";
+            LOGGER.warn("Hostname cannot be `localhost`, temporary hostname is: " + host);
+            return host;
+        }
+
+        return host;
     }
 
     @NotNull
@@ -245,7 +259,7 @@ public final class Zeroconf implements Closeable {
     }
 
     /**
-     * Set the local hostname, as returned by {@link #getLocalHostName}
+     * Set the local hostname, as returned by {@link #getOrCreateLocalHostName}
      *
      * @param name the hostname, which should be undotted
      * @return this

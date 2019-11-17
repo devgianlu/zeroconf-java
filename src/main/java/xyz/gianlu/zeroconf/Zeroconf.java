@@ -517,7 +517,7 @@ public final class Zeroconf implements Closeable {
             localAddresses = new HashMap<>();
         }
 
-        private synchronized Selector getSelector() throws IOException {
+        private Selector getSelector() throws IOException {
             if (selector == null) selector = Selector.open();
             return selector;
         }
@@ -525,7 +525,7 @@ public final class Zeroconf implements Closeable {
         /**
          * Stop the thread and rejoin
          */
-        synchronized void close() throws InterruptedException {
+        void close() throws InterruptedException {
             this.cancelled = true;
             if (selector != null) {
                 selector.wakeup();
@@ -536,7 +536,7 @@ public final class Zeroconf implements Closeable {
         /**
          * Add a packet to the send queue
          */
-        synchronized void push(Packet packet) {
+        void push(Packet packet) {
             sendq.addLast(packet);
             if (selector != null) {
                 // Only send if we have a Nic
@@ -547,7 +547,7 @@ public final class Zeroconf implements Closeable {
         /**
          * Pop a packet from the send queue or return null if none available
          */
-        private synchronized Packet pop() {
+        private Packet pop() {
             return sendq.pollFirst();
         }
 
@@ -555,7 +555,7 @@ public final class Zeroconf implements Closeable {
          * Add a NetworkInterface. Try to identify whether it's IPV4 or IPV6, or both. IPV4 tested,
          * IPV6 is not but at least it doesn't crash.
          */
-        public synchronized void addNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
+        public void addNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
             if (!channels.containsKey(nic) && nic.supportsMulticast() && nic.isUp() && !nic.isLoopback()) {
                 boolean ipv4 = false, ipv6 = false;
                 List<InetAddress> locallist = new ArrayList<>();
@@ -589,7 +589,7 @@ public final class Zeroconf implements Closeable {
             }
         }
 
-        synchronized void removeNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
+        void removeNetworkInterface(@NotNull NetworkInterface nic) throws IOException {
             SelectionKey key = channels.remove(nic);
             if (key != null) {
                 localAddresses.remove(nic);
@@ -598,7 +598,7 @@ public final class Zeroconf implements Closeable {
             }
         }
 
-        synchronized List<InetAddress> getLocalAddresses() {
+        List<InetAddress> getLocalAddresses() {
             List<InetAddress> list = new ArrayList<>();
             for (List<InetAddress> pernic : localAddresses.values()) {
                 for (InetAddress address : pernic) {

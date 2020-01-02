@@ -33,7 +33,6 @@ class RecordTXT extends Record {
 
     @Override
     protected void readData(int len, ByteBuffer in) {
-        int start = in.position();
         int end = in.position() + len;
         values = new LinkedHashMap<>();
         while (in.position() < end) {

@@ -12,11 +12,14 @@ import java.util.*;
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
 public final class Service {
-    private final String alias, service;
+    private final String alias;
+    private final String service;
     private final int port;
     private final Map<String, String> text;
     private final List<InetAddress> addresses = new ArrayList<>();
-    private String domain, protocol, host;
+    private String domain;
+    private String protocol;
+    private String host;
 
     /**
      * Create a new {@link Service} to be announced by this object.

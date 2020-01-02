@@ -1,6 +1,7 @@
 package xyz.gianlu.zeroconf;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.Inet6Address;
@@ -37,11 +38,12 @@ class RecordAAAA extends Record {
         }
     }
 
+    @Nullable
     public Inet6Address getAddress() {
         try {
             return address == null ? null : (Inet6Address) InetAddress.getByAddress(address);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException ex) {
+            throw new IllegalStateException(ex);
         }
     }
 

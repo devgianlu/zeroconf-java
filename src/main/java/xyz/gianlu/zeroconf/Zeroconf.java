@@ -1,7 +1,8 @@
 package xyz.gianlu.zeroconf;
 
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,7 +33,7 @@ public final class Zeroconf implements Closeable {
     private static final String DISCOVERY = "_services._dns-sd._udp.local";
     private static final InetSocketAddress BROADCAST4;
     private static final InetSocketAddress BROADCAST6;
-    private static final Logger LOGGER = Logger.getLogger(Zeroconf.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Zeroconf.class);
 
     static {
         try {
@@ -76,7 +77,7 @@ public final class Zeroconf implements Closeable {
         String host = InetAddress.getLocalHost().getHostName();
         if (Objects.equals(host, "localhost")) {
             host = Base64.getEncoder().encodeToString(BigInteger.valueOf(ThreadLocalRandom.current().nextLong()).toByteArray()) + ".local";
-            LOGGER.warn("Hostname cannot be `localhost`, temporary hostname is: " + host);
+            LOGGER.warn("Hostname cannot be `localhost`, temporary hostname is {}.", host);
             return host;
         }
 
@@ -469,7 +470,7 @@ public final class Zeroconf implements Closeable {
             }
         }
 
-        LOGGER.info("Announced service: " + service);
+        LOGGER.info("Announced {}.", service);
     }
 
     /**
@@ -495,8 +496,7 @@ public final class Zeroconf implements Closeable {
             }
         }
 
-
-        LOGGER.info("Unannounced service. " + service);
+        LOGGER.info("Unannounced {}.", service);
     }
 
     /**

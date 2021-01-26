@@ -578,11 +578,11 @@ public final class Zeroconf implements Closeable {
                 channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
                 channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, 255);
                 if (ipv4) {
-                    channel.bind(new InetSocketAddress(BROADCAST4.getPort()));
+                    channel.bind(new InetSocketAddress("0.0.0.0", BROADCAST4.getPort()));
                     channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, nic);
                     channel.join(BROADCAST4.getAddress(), nic);
                 } else if (ipv6) {
-                    channel.bind(new InetSocketAddress(BROADCAST6.getPort()));
+                    channel.bind(new InetSocketAddress("::", BROADCAST6.getPort()));
                     channel.join(BROADCAST6.getAddress(), nic);
                 }
 

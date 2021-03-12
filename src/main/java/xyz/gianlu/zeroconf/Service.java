@@ -24,6 +24,8 @@ public final class Service {
     /**
      * Create a new {@link Service} to be announced by this object.
      *
+     * A JmDNS `type` field of "_foobar._tcp.local." would be specified here as a `service` param of "foobar".
+     *
      * @param alias   the service alias, eg "My Web Server"
      * @param service the service type, eg "http"
      * @param port    the service port

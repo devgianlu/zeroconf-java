@@ -586,6 +586,7 @@ public final class Zeroconf implements Closeable {
                     channel.join(BROADCAST6.getAddress(), nic);
                 }
 
+                getSelector().wakeup();
                 channels.put(nic, channel.register(getSelector(), SelectionKey.OP_READ));
                 localAddresses.put(nic, locallist);
                 if (!isAlive()) start();

@@ -508,6 +508,7 @@ public final class Zeroconf implements Closeable {
         private final Map<NetworkInterface, SelectionKey> channels;
         private final Map<NetworkInterface, List<InetAddress>> localAddresses;
         private volatile boolean cancelled;
+        private final ABLock selectorLock = new ABLock();
         private Selector selector;
 
         ListenerThread() {
@@ -519,8 +520,8 @@ public final class Zeroconf implements Closeable {
             localAddresses = new HashMap<>();
         }
 
-        private Selector getSelector() throws IOException {
-            if (selector == null) selector = Selector.open();
+        private synchronized Selector getSelector() throws IOException {
+            if (selector == null) selector = Selector.open(); //TODO Is this expensive?  Setting `selector` `final` and initializing on creation would remove the need for a synchronized `getSelector` method.
             return selector;
         }
 
@@ -586,8 +587,18 @@ public final class Zeroconf implements Closeable {
                     channel.join(BROADCAST6.getAddress(), nic);
                 }
 
-                getSelector().wakeup();
-                channels.put(nic, channel.register(getSelector(), SelectionKey.OP_READ));
+                selectorLock.lockA1();
+                try {
+                  getSelector().wakeup();
+                  selectorLock.lockA2();
+                  try {
+                    channels.put(nic, channel.register(getSelector(), SelectionKey.OP_READ));
+                  } finally {
+                    selectorLock.unlockA2();
+                  }
+                } finally {
+                  selectorLock.unlockA1();
+                }
                 localAddresses.put(nic, locallist);
                 if (!isAlive()) start();
             }
@@ -644,7 +655,12 @@ public final class Zeroconf implements Closeable {
 
                     // We know selector exists
                     Selector selector = getSelector();
-                    selector.select();
+                    selectorLock.lockB();
+                    try {
+                      selector.select();
+                    } finally {
+                      selectorLock.unlockB();
+                    }
                     Set<SelectionKey> selected = selector.selectedKeys();
                     for (SelectionKey key : selected) {
                         // We know selected keys are readable

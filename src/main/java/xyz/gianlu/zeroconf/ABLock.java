@@ -23,13 +23,6 @@
  */
 package xyz.gianlu.zeroconf;
 
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import sun.awt.Mutex;
-
 /**
  * Multistage lock customized for NIO Selectors.<br/>
  * Extended rationale:<br/>
@@ -46,9 +39,9 @@ import sun.awt.Mutex;
  * So, here's my solution.  Consider the following code.<br/>
  * <pre>
  * private final ABLock selectorLock = new ABLock();
- * 
+ *
  * ...
- * 
+ *
  * // Channel registration
  * selectorLock.lockA1();
  * try {
@@ -64,7 +57,7 @@ import sun.awt.Mutex;
  * }
  *
  * ...
- * 
+ *
  * // Select
  * Selector selector = getSelector();
  * selectorLock.lockB();
@@ -95,103 +88,108 @@ import sun.awt.Mutex;
  * I've only tested this briefly.  I'd want to test it a lot more before I was
  * very comfortable with it, and I don't really have time right now.  I suspect
  * it's better than nothing, at least, though.
- * 
+ *
  * @author erhannis
  */
-public class ABLock {
-  private long a1 = 0;
-  private long a2 = 0;
-  private long b = 0;
-  
-  private final Object sync = new Object();
-  
-  /**
-   * For every call to lockA1, there must be exactly one subsequent call to unlockA1.<br/>
-   * Attempted locks on A1 are not blocked by anything.
-   * An existing lock on A1 blocks new locks on B.
-   * An existing lock on A1 DOES NOT block new locks on A1 or A2.
-   */
-  public void lockA1() {
-    synchronized (sync) {
-      a1++;
-      sync.notifyAll();
-    }
-  }
-  
-  public void unlockA1() {
-    synchronized (sync) {
-      a1--;
-      sync.notifyAll();
-    }
-  }
-  
-  /**
-   * For every call to lockA2, there must be a subsequent call to unlockA2.<br/>
-   * Attempted locks on A2 are blocked by existing locks on B, and nothing else.
-   * An existing lock on A2 blocks new locks on B.
-   * An existing lock on A2 DOES NOT block new locks on A1 or A2.
-   */
-  public void lockA2() {
-    synchronized (sync) {
-      while (b > 0) {
-        try {
-          sync.wait();
-        } catch (InterruptedException ex) {}
-      }
-      a2++;
-      sync.notifyAll();
-    }
-  }
+public final class ABLock {
+    private final Object sync = new Object();
+    private long a1 = 0;
+    private long a2 = 0;
+    private long b = 0;
 
-  public void lockA2interruptible() throws InterruptedException {
-    synchronized (sync) {
-      while (b > 0) {
-        sync.wait();
-      }
-      a2++;
-      sync.notifyAll();
+    /**
+     * For every call to lockA1, there must be exactly one subsequent call to unlockA1.<br/>
+     * Attempted locks on A1 are not blocked by anything.
+     * An existing lock on A1 blocks new locks on B.
+     * An existing lock on A1 DOES NOT block new locks on A1 or A2.
+     */
+    public void lockA1() {
+        synchronized (sync) {
+            a1++;
+            sync.notifyAll();
+        }
     }
-  }
-  
-  public void unlockA2() {
-    synchronized (sync) {
-      a2--;
-      sync.notifyAll();
-    }
-  }
-  
-  /**
-   * For every call to lockB, there must be a subsequent call to unlockB.<br/>
-   * Attempted locks on B are blocked by existing locks on A1 and A2, and nothing else.
-   * An existing lock on B blocks new locks on A2.
-   * An existing lock on B DOES NOT block new locks on A1 or B.
-   */
-  public void lockB() {
-    synchronized (sync) {
-      while (a1 > 0 || a2 > 0) {
-        try {
-          sync.wait();
-        } catch (InterruptedException ex) {}
-      }
-      b++;
-      sync.notifyAll();
-    }
-  }
-  
-  public void lockBinterruptible() throws InterruptedException {
-    synchronized (sync) {
-      while (a1 > 0 || a2 > 0) {
-        sync.wait();
-      }
-      b++;
-      sync.notifyAll();
-    }
-  }
 
-  public void unlockB() {
-    synchronized (sync) {
-      b--;
-      sync.notifyAll();
+    public void lockA1Interruptable() throws InterruptedException {
+        synchronized (sync) {
+            while (b > 0)
+                sync.wait();
+
+            a1++;
+            sync.notifyAll();
+        }
     }
-  }
+
+    public void unlockA1() {
+        synchronized (sync) {
+            a1--;
+            sync.notifyAll();
+        }
+    }
+
+    /**
+     * For every call to lockA2, there must be a subsequent call to unlockA2.<br/>
+     * Attempted locks on A2 are blocked by existing locks on B, and nothing else.
+     * An existing lock on A2 blocks new locks on B.
+     * An existing lock on A2 DOES NOT block new locks on A1 or A2.
+     */
+    public void lockA2() throws InterruptedException {
+        synchronized (sync) {
+            while (b > 0)
+                sync.wait();
+
+            a2++;
+            sync.notifyAll();
+        }
+    }
+
+    public void lockA2Interruptable() throws InterruptedException {
+        synchronized (sync) {
+            while (b > 0)
+                sync.wait();
+
+            a2++;
+            sync.notifyAll();
+        }
+    }
+
+    public void unlockA2() {
+        synchronized (sync) {
+            a2--;
+            sync.notifyAll();
+        }
+    }
+
+    /**
+     * For every call to lockB, there must be a subsequent call to unlockB.<br/>
+     * Attempted locks on B are blocked by existing locks on A1 and A2, and nothing else.
+     * An existing lock on B blocks new locks on A2.
+     * An existing lock on B DOES NOT block new locks on A1 or B.
+     */
+    public void lockB() throws InterruptedException {
+        synchronized (sync) {
+            while (a1 > 0 || a2 > 0)
+                sync.wait();
+
+            b++;
+            sync.notifyAll();
+        }
+    }
+
+    public void lockBInterruptable() throws InterruptedException {
+        synchronized (sync) {
+            while (a1 > 0 || a2 > 0)
+                sync.wait();
+
+            b++;
+            sync.notifyAll();
+        }
+    }
+
+    public void unlockB() {
+        synchronized (sync) {
+            b--;
+            sync.notifyAll();
+        }
+    }
 }

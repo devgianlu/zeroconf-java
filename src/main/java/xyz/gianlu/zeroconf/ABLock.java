@@ -110,16 +110,6 @@ public final class ABLock {
         }
     }
 
-    public void lockA1Interruptable() throws InterruptedException {
-        synchronized (sync) {
-            while (b > 0)
-                sync.wait();
-
-            a1++;
-            sync.notifyAll();
-        }
-    }
-
     public void unlockA1() {
         synchronized (sync) {
             a1--;
@@ -143,16 +133,6 @@ public final class ABLock {
         }
     }
 
-    public void lockA2Interruptable() throws InterruptedException {
-        synchronized (sync) {
-            while (b > 0)
-                sync.wait();
-
-            a2++;
-            sync.notifyAll();
-        }
-    }
-
     public void unlockA2() {
         synchronized (sync) {
             a2--;
@@ -167,16 +147,6 @@ public final class ABLock {
      * An existing lock on B DOES NOT block new locks on A1 or B.
      */
     public void lockB() throws InterruptedException {
-        synchronized (sync) {
-            while (a1 > 0 || a2 > 0)
-                sync.wait();
-
-            b++;
-            sync.notifyAll();
-        }
-    }
-
-    public void lockBInterruptable() throws InterruptedException {
         synchronized (sync) {
             while (a1 > 0 || a2 > 0)
                 sync.wait();

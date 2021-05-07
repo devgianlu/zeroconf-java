@@ -65,6 +65,8 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
+                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                 </executions>
@@ -145,6 +147,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <quiet>true</quiet>
                             <failOnError>false</failOnError>
                         </configuration>
                     </plugin>
@@ -173,11 +176,33 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- Prevent `gpg` from using pinentry programs -->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>github</id>
+            <activation>
+                <property>
+                    <name>github</name>
+                </property>
+            </activation>
+
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <url>https://maven.pkg.github.com/devgianlu/zeroconf-java</url>
+                </repository>
+            </distributionManagement>
         </profile>
     </profiles>
 </project>

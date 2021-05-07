@@ -15,5 +15,15 @@ public class Main {
         Service service = new Service(args[0], args[1], Integer.parseInt(args[2]));
         zeroconf.announce(service);
         Runtime.getRuntime().addShutdownHook(new Thread(zeroconf::close));
+
+        while (true) {
+            System.out.println(zeroconf.discover(args[1], "tcp", ".local"));
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                break;
+            }
+        }
     }
 }

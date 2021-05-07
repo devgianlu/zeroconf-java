@@ -390,6 +390,64 @@ public final class Zeroconf implements Closeable {
     }
 
     /**
+     * Try to discover services.
+     *
+     * @param service  the service name, eg "_http"
+     * @param protocol the protocol, eg "_tcp"
+     * @param domain   the domain, eg ".local"
+     * @return a list of discovered services
+     */
+    @NotNull
+    public Collection<RecordSRV> discover(@NotNull String service, @NotNull String protocol, @NotNull String domain) {
+        String serviceName = "_" + service + "._" + protocol + domain;
+
+        Packet probe = new Packet();
+        probe.setResponse(false);
+        probe.addQuestion(new RecordPTR(serviceName));
+
+        Set<RecordSRV> matches = Collections.synchronizedSet(new HashSet<>());
+        PacketListener probeListener = packet -> {
+            if (packet.isResponse()) {
+                boolean notify = false;
+                for (Record r : packet.getAnswers()) {
+                    if (r instanceof RecordSRV && r.getName().endsWith(serviceName)) {
+                        matches.add((RecordSRV) r);
+                        notify = true;
+                    }
+                }
+
+                for (Record r : packet.getAdditionals()) {
+                    if (r instanceof RecordSRV && r.getName().endsWith(serviceName)) {
+                        matches.add((RecordSRV) r);
+                        notify = true;
+                    }
+                }
+
+                if (notify) {
+                    synchronized (matches) {
+                        matches.notifyAll();
+                    }
+                }
+            }
+        };
+
+        addReceiveListener(probeListener);
+        for (int i = 0; i < 3 && matches.isEmpty(); i++) {
+            send(probe);
+            synchronized (matches) {
+                try {
+                    matches.wait(250);
+                } catch (InterruptedException ex) {
+                    // ignore
+                }
+            }
+        }
+
+        removeReceiveListener(probeListener);
+        return matches;
+    }
+
+    /**
      * Probe for a ZeroConf service with the specified name and return true if a matching
      * service is found.
      * <p>
@@ -400,13 +458,13 @@ public final class Zeroconf implements Closeable {
      * Note the approach here is the only example of where we send a query packet. It could
      * be used as the basis for us acting as a service discovery client
      *
-     * @param fqdn the fully qualified servicename, eg "My Web Service._http._tcp.local".
+     * @param fqdn the fully qualified service name, eg "My Web Service._http._tcp.local".
      */
     private boolean probe(final String fqdn) {
-        final Packet probe = new Packet();
+        Packet probe = new Packet();
         probe.setResponse(false);
         probe.addQuestion(new RecordANY(fqdn));
-        final AtomicBoolean match = new AtomicBoolean(false);
+        AtomicBoolean match = new AtomicBoolean(false);
         PacketListener probeListener = packet -> {
             if (packet.isResponse()) {
                 for (Record r : packet.getAnswers()) {

@@ -60,4 +60,4 @@ jobs:
           name: ${{ github.ref }}
           draft: true
           prerelease: false
-          files: target/zeroconf-*.jar
+          files: target/zeroconf-java.jar

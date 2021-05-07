@@ -398,27 +398,27 @@ public final class Zeroconf implements Closeable {
      * @return a list of discovered services
      */
     @NotNull
-    public Collection<RecordSRV> discover(@NotNull String service, @NotNull String protocol, @NotNull String domain) {
+    public Collection<DiscoveredService> discover(@NotNull String service, @NotNull String protocol, @NotNull String domain) {
         String serviceName = "_" + service + "._" + protocol + domain;
 
         Packet probe = new Packet();
         probe.setResponse(false);
         probe.addQuestion(new RecordPTR(serviceName));
 
-        Set<RecordSRV> matches = Collections.synchronizedSet(new HashSet<>());
+        Set<DiscoveredService> matches = Collections.synchronizedSet(new HashSet<>());
         PacketListener probeListener = packet -> {
             if (packet.isResponse()) {
                 boolean notify = false;
                 for (Record r : packet.getAnswers()) {
                     if (r instanceof RecordSRV && r.getName().endsWith(serviceName)) {
-                        matches.add((RecordSRV) r);
+                        matches.add(new DiscoveredService((RecordSRV) r));
                         notify = true;
                     }
                 }
 
                 for (Record r : packet.getAdditionals()) {
                     if (r instanceof RecordSRV && r.getName().endsWith(serviceName)) {
-                        matches.add((RecordSRV) r);
+                        matches.add(new DiscoveredService((RecordSRV) r));
                         notify = true;
                     }
                 }

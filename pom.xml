@@ -4,7 +4,7 @@
 
     <groupId>xyz.gianlu.zeroconf</groupId>
     <artifactId>zeroconf</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1-SNAPSHOT</version>
 
     <name>zeroconf-java</name>
     <description>A pure Java implementation of the Zeroconf technology</description>

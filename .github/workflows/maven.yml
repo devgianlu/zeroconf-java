@@ -1,0 +1,63 @@
+name: Maven build / deploy
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+      - name: Import GPG secrets
+        if: ${{ !startsWith(github.ref, 'refs/pull') }}
+        run: |
+          echo $GPG_SECRET_KEYS | base64 --decode > gpg-private-key.txt
+          gpg --pinentry-mode loopback --import --batch gpg-private-key.txt
+          echo $GPG_OWNERTRUST | base64 --decode > gpg-ownertrust.txt
+          gpg --pinentry-mode loopback --import-ownertrust --batch gpg-ownertrust.txt
+        env:
+          GPG_SECRET_KEYS: ${{ secrets.GPG_SECRET_KEYS }}
+          GPG_OWNERTRUST: ${{ secrets.GPG_OWNERTRUST }}
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Build with Maven
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: mvn clean test -Pdebug -B -U -Dgpg.skip -Dmaven.javadoc.skip=true
+      - name: Deploy with Maven to OSSRH
+        if: ${{ !startsWith(github.ref, 'refs/pull') }}
+        run: mvn deploy --settings .maven.xml -B -U -Possrh
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Deploy with Maven to GitHub packages
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: mvn deploy --settings .maven.xml -B -U -Pgithub
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ github.ref }}
+          draft: true
+          prerelease: false
+          files: target/zeroconf-*.jar

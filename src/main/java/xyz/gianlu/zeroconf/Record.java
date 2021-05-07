@@ -160,4 +160,26 @@ class Record {
         if (len > 0) out.putShort(pos, (short) len);
         else out.position(pos);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Record record = (Record) o;
+        if (type != record.type) return false;
+        if (ttl != record.ttl) return false;
+        if (clazz != record.clazz) return false;
+        if (!name.equals(record.name)) return false;
+        return Arrays.equals(data, record.data);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type;
+        result = 31 * result + ttl;
+        result = 31 * result + name.hashCode();
+        result = 31 * result + clazz;
+        result = 31 * result + Arrays.hashCode(data);
+        return result;
+    }
 }

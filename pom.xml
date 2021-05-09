@@ -84,10 +84,10 @@
             </activation>
         </profile>
         <profile>
-            <id>release</id>
+            <id>ossrh</id>
             <activation>
                 <property>
-                    <name>release</name>
+                    <name>ossrh</name>
                 </property>
             </activation>
 

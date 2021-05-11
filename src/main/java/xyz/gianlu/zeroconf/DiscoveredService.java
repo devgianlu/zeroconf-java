@@ -12,18 +12,27 @@ public final class DiscoveredService {
     public final String service;
     public final String protocol;
     public final String domain;
+    public final String serviceName;
+    private final long expiration;
 
     DiscoveredService(@NotNull RecordSRV record) {
+        expiration = System.currentTimeMillis() + record.ttl * 1000L;
+
         target = record.getTarget();
         port = record.getPort();
+        serviceName = record.getName();
 
-        String[] split = record.getName().split("\\.");
+        String[] split = serviceName.split("\\.");
         if (split.length != 4) throw new IllegalArgumentException("Invalid service name: " + record.getName());
 
         name = split[0];
         service = split[1];
         protocol = split[2];
         domain = "." + split[3];
+    }
+
+    public boolean isExpired() {
+        return System.currentTimeMillis() > expiration;
     }
 
     @Override

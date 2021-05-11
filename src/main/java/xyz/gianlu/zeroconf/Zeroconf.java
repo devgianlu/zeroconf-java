@@ -16,6 +16,7 @@ import java.nio.channels.Selector;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -47,6 +48,7 @@ public final class Zeroconf implements Closeable {
     private final ListenerThread thread;
     private final List<Record> registry;
     private final Collection<Service> services;
+    private final CopyOnWriteArrayList<DiscoveredServices> discoverers;
     private final CopyOnWriteArrayList<PacketListener> receiveListeners;
     private final CopyOnWriteArrayList<PacketListener> sendListeners;
     private boolean useIpv4 = true;
@@ -67,6 +69,7 @@ public final class Zeroconf implements Closeable {
 
         receiveListeners = new CopyOnWriteArrayList<>();
         sendListeners = new CopyOnWriteArrayList<>();
+        discoverers = new CopyOnWriteArrayList<>();
         thread = new ListenerThread();
         registry = new ArrayList<>();
         services = new HashSet<>();
@@ -101,8 +104,15 @@ public final class Zeroconf implements Closeable {
      */
     @Override
     public void close() {
-        List<Service> list = new ArrayList<>(services);
-        for (Service service : list) unannounce(service);
+        for (Service service : new ArrayList<>(services))
+            unannounce(service);
+
+        services.clear();
+
+        for (DiscoveredServices discoverer : new ArrayList<>(discoverers))
+            discoverer.stop();
+
+        discoverers.clear();
 
         try {
             thread.close();
@@ -390,7 +400,7 @@ public final class Zeroconf implements Closeable {
     }
 
     /**
-     * Try to discover services.
+     * Create a background thread that continuously searches for the given service.
      *
      * @param service  the service name, eg "_http"
      * @param protocol the protocol, eg "_tcp"
@@ -398,53 +408,11 @@ public final class Zeroconf implements Closeable {
      * @return a list of discovered services
      */
     @NotNull
-    public Collection<DiscoveredService> discover(@NotNull String service, @NotNull String protocol, @NotNull String domain) {
-        String serviceName = "_" + service + "._" + protocol + domain;
-
-        Packet probe = new Packet();
-        probe.setResponse(false);
-        probe.addQuestion(new RecordPTR(serviceName));
-
-        Set<DiscoveredService> matches = Collections.synchronizedSet(new HashSet<>());
-        PacketListener probeListener = packet -> {
-            if (packet.isResponse()) {
-                boolean notify = false;
-                for (Record r : packet.getAnswers()) {
-                    if (r instanceof RecordSRV && r.getName().endsWith(serviceName)) {
-                        matches.add(new DiscoveredService((RecordSRV) r));
-                        notify = true;
-                    }
-                }
-
-                for (Record r : packet.getAdditionals()) {
-                    if (r instanceof RecordSRV && r.getName().endsWith(serviceName)) {
-                        matches.add(new DiscoveredService((RecordSRV) r));
-                        notify = true;
-                    }
-                }
-
-                if (notify) {
-                    synchronized (matches) {
-                        matches.notifyAll();
-                    }
-                }
-            }
-        };
-
-        addReceiveListener(probeListener);
-        for (int i = 0; i < 3 && matches.isEmpty(); i++) {
-            send(probe);
-            synchronized (matches) {
-                try {
-                    matches.wait(250);
-                } catch (InterruptedException ex) {
-                    // ignore
-                }
-            }
-        }
-
-        removeReceiveListener(probeListener);
-        return matches;
+    public DiscoveredServices discover(@NotNull String service, @NotNull String protocol, @NotNull String domain) {
+        DiscoveredServices discoverer = new DiscoveredServices("_" + service + "._" + protocol + domain);
+        new Thread(discoverer, "zeroconf-discover-" + service + "-" + protocol + "-" + domain).start();
+        discoverers.add(discoverer);
+        return discoverer;
     }
 
     /**
@@ -555,6 +523,70 @@ public final class Zeroconf implements Closeable {
         }
 
         LOGGER.info("Unannounced {}.", service);
+    }
+
+    public class DiscoveredServices implements Runnable {
+        private final String serviceName;
+        private final PacketListener listener;
+        private final Set<DiscoveredService> services = Collections.synchronizedSet(new HashSet<>());
+        private volatile boolean shouldStop = false;
+        private int nextInterval = 1000;
+
+        DiscoveredServices(@NotNull String serviceName) {
+            this.serviceName = serviceName;
+
+            addReceiveListener(listener = packet -> {
+                if (!packet.isResponse())
+                    return;
+
+                for (Record r : packet.getAnswers())
+                    if (r instanceof RecordSRV)
+                        addService((RecordSRV) r);
+
+                for (Record r : packet.getAdditionals())
+                    if (r instanceof RecordSRV)
+                        addService((RecordSRV) r);
+            });
+        }
+
+        private void addService(@NotNull RecordSRV record) {
+            if (!record.getName().endsWith(serviceName))
+                return;
+
+            services.removeIf(s -> s.isExpired() || s.serviceName.equals(record.getName()));
+            services.add(new DiscoveredService(record));
+        }
+
+        public void stop() {
+            shouldStop = true;
+        }
+
+        @NotNull
+        public Collection<DiscoveredService> getServices() {
+            return Collections.unmodifiableCollection(services);
+        }
+
+        @Override
+        public void run() {
+            while (!shouldStop) {
+                Packet probe = new Packet();
+                probe.setResponse(false);
+                probe.addQuestion(new RecordPTR(serviceName));
+                send(probe);
+
+                try {
+                    //noinspection BusyWait
+                    Thread.sleep(nextInterval);
+                    nextInterval *= 2;
+                    if (nextInterval >= TimeUnit.MINUTES.toMillis(60))
+                        nextInterval = (int) (TimeUnit.MINUTES.toMillis(60) + 20 + Math.random() * 100);
+                } catch (InterruptedException ex) {
+                    break;
+                }
+            }
+
+            removeReceiveListener(listener);
+        }
     }
 
     /**

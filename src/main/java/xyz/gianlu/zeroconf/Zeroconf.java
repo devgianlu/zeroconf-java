@@ -580,7 +580,7 @@ public final class Zeroconf implements Closeable {
 
         private synchronized Selector getSelector() throws IOException {
             if (selector == null)
-                selector = Selector.open(); // TODO: Is this expensive?  Setting `selector` `final` and initializing on creation would remove the need for a synchronized `getSelector` method.
+                selector = Selector.open();
             return selector;
         }
 
@@ -707,10 +707,18 @@ public final class Zeroconf implements Closeable {
                             DatagramChannel channel = (DatagramChannel) key.channel();
                             InetSocketAddress address = packet.getAddress();
                             if (address != null) {
+                                buf.position(0);
                                 channel.send(buf, address);
                             } else {
-                                if (useIpv4) channel.send(buf, BROADCAST4);
-                                if (useIpv6) channel.send(buf, BROADCAST6);
+                                if (useIpv4) {
+                                    buf.position(0);
+                                    channel.send(buf, BROADCAST4);
+                                }
+
+                                if (useIpv6) {
+                                    buf.position(0);
+                                    channel.send(buf, BROADCAST6);
+                                }
                             }
                         }
                     }

@@ -49,14 +49,17 @@ class Record {
         StringBuilder sb = new StringBuilder();
         int len;
         while ((len = (in.get() & 0xFF)) > 0) {
-            if (len < 0x40) {
+            if (len >= 0x40) {
+                int off = ((len & 0x3F) << 8) | (in.get() & 0xFF); // Offset from start of packet
+                int oldPos = in.position();
+                in.position(off);
+                if (sb.length() > 0) sb.append('.');
+                sb.append(readName(in));
+                in.position(oldPos);
+                break;
+            } else {
                 if (sb.length() > 0) sb.append('.');
                 while (len-- > 0) sb.append((char) (in.get() & 0xFF));
-            } else {
-                int off = ((len & 0x3F) << 8) | (in.get() & 0xFF);       // Offset from start of packet
-                len = (in.get(off++) & 0xFF);
-                while (len-- > 0) sb.append((char) (in.get(off++) & 0xFF));
-                break;
             }
         }
         return sb.toString();

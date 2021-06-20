@@ -2,6 +2,10 @@ package xyz.gianlu.zeroconf;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * @author devgianlu
  */
@@ -14,6 +18,7 @@ public final class DiscoveredService {
     public final String domain;
     public final String serviceName;
     private final long expiration;
+    private final List<Record> relatedRecords = new ArrayList<>(5);
 
     DiscoveredService(@NotNull RecordSRV record) {
         expiration = System.currentTimeMillis() + record.ttl * 1000L;
@@ -33,6 +38,16 @@ public final class DiscoveredService {
 
     public boolean isExpired() {
         return System.currentTimeMillis() > expiration;
+    }
+
+    void addRelatedRecord(@NotNull Record record) {
+        relatedRecords.removeIf(Record::isExpired);
+        relatedRecords.add(record);
+    }
+
+    @NotNull
+    public List<Record> getRelatedRecords() {
+        return Collections.unmodifiableList(relatedRecords);
     }
 
     @Override

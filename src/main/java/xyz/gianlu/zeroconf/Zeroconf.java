@@ -539,14 +539,23 @@ public final class Zeroconf implements Closeable {
                 if (!packet.isResponse())
                     return;
 
-                for (Record r : packet.getAnswers())
-                    if (r instanceof RecordSRV)
-                        addService((RecordSRV) r);
+                for (Record r : packet.getAnswers()) {
+                    if (r instanceof RecordSRV) addService((RecordSRV) r);
+                    else addRelated(r);
+                }
 
-                for (Record r : packet.getAdditionals())
-                    if (r instanceof RecordSRV)
-                        addService((RecordSRV) r);
+                for (Record r : packet.getAdditionals()) {
+                    if (r instanceof RecordSRV) addService((RecordSRV) r);
+                    else addRelated(r);
+                }
             });
+        }
+
+        private void addRelated(@NotNull Record record) {
+            if (!record.getName().endsWith(serviceName))
+                return;
+
+            services.stream().filter(s -> s.serviceName.equals(record.getName())).forEach(s -> s.addRelatedRecord(record));
         }
 
         private void addService(@NotNull RecordSRV record) {

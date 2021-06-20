@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-class RecordANY extends Record {
+public class RecordANY extends Record {
 
     RecordANY() {
         super(TYPE_ANY);

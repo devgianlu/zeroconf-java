@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-class RecordSRV extends Record {
+public class RecordSRV extends Record {
     private int priority;
     private int weight;
     private int port;

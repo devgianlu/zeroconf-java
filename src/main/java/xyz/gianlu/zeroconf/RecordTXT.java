@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-class RecordTXT extends Record {
+public class RecordTXT extends Record {
     private Map<String, String> values;
 
     RecordTXT() {

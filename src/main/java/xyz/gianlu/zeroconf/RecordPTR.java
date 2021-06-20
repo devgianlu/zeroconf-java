@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-class RecordPTR extends Record {
+public class RecordPTR extends Record {
     private String value;
 
     RecordPTR() {

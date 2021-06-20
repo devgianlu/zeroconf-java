@@ -8,7 +8,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
-class RecordAAAA extends Record {
+public class RecordAAAA extends Record {
     private byte[] address;
 
     RecordAAAA() {

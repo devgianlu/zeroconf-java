@@ -6,7 +6,7 @@ import java.util.Arrays;
 /**
  * Base class for a DNS record. Written entirely without the benefit of specifications.
  */
-class Record {
+public class Record {
     static final int TYPE_A = 0x01;
     static final int TYPE_PTR = 0x0C;
     static final int TYPE_CNAME = 0x05;
@@ -107,7 +107,7 @@ class Record {
         }
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
@@ -116,7 +116,7 @@ class Record {
         return this;
     }
 
-    int getType() {
+    public int getType() {
         return type;
     }
 
@@ -139,11 +139,11 @@ class Record {
         }
     }
 
-    boolean isUnicastQuery() {
+    public boolean isUnicastQuery() {
         return (clazz & 0x80) != 0;
     }
 
-    boolean isExpired() {
+    public boolean isExpired() {
         return System.currentTimeMillis() > timestamp + ttl * 1000L;
     }
 

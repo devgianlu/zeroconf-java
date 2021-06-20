@@ -15,6 +15,7 @@ class Record {
     static final int TYPE_SRV = 0x21;
     static final int TYPE_NSEC = 0x2F;
     static final int TYPE_ANY = 0xFF;
+    private final long timestamp;
     private final int type;
     protected int ttl;
     private String name;
@@ -22,6 +23,7 @@ class Record {
     private byte[] data;
 
     Record(int type) {
+        this.timestamp = System.currentTimeMillis();
         this.type = type & 0xFFFF;
         setTTL(4500);
         this.clazz = 1;
@@ -139,6 +141,10 @@ class Record {
 
     boolean isUnicastQuery() {
         return (clazz & 0x80) != 0;
+    }
+
+    boolean isExpired() {
+        return System.currentTimeMillis() > timestamp + ttl * 1000L;
     }
 
     @Override

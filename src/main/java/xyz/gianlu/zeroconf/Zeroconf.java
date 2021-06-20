@@ -1,6 +1,7 @@
 package xyz.gianlu.zeroconf;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -555,7 +556,9 @@ public final class Zeroconf implements Closeable {
             if (!record.getName().endsWith(serviceName))
                 return;
 
-            services.stream().filter(s -> s.serviceName.equals(record.getName())).forEach(s -> s.addRelatedRecord(record));
+            synchronized (services) {
+                services.stream().filter(s -> s.serviceName.equals(record.getName())).forEach(s -> s.addRelatedRecord(record));
+            }
         }
 
         private void addService(@NotNull RecordSRV record) {
@@ -573,6 +576,17 @@ public final class Zeroconf implements Closeable {
         @NotNull
         public Collection<DiscoveredService> getServices() {
             return Collections.unmodifiableCollection(services);
+        }
+
+        @Nullable
+        public DiscoveredService getService(@NotNull String name) {
+            synchronized (services) {
+                for (DiscoveredService service : services)
+                    if (service.name.equals(name))
+                        return service;
+
+                return null;
+            }
         }
 
         @Override

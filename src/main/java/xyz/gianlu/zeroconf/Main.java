@@ -8,9 +8,9 @@ import java.io.IOException;
 public class Main {
     public static void main(String[] args) throws IOException {
         Zeroconf zeroconf = new Zeroconf();
-        zeroconf.addAllNetworkInterfaces()
-                .setUseIpv4(true)
-                .setUseIpv6(false);
+        zeroconf.setUseIpv4(true)
+                .setUseIpv6(false)
+                .addAllNetworkInterfaces();
 
         Runtime.getRuntime().addShutdownHook(new Thread(zeroconf::close));
 

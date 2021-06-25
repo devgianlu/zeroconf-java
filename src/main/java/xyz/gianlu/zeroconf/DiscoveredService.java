@@ -2,6 +2,7 @@ package xyz.gianlu.zeroconf;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +49,16 @@ public final class DiscoveredService {
     @NotNull
     public List<Record> getRelatedRecords() {
         return Collections.unmodifiableList(relatedRecords);
+    }
+
+    @NotNull
+    public List<InetSocketAddress> getAddresses() {
+        List<InetSocketAddress> list = new ArrayList<>(3);
+        for (Record record : relatedRecords) {
+            if (record instanceof RecordSRV)
+                list.add(new InetSocketAddress(((RecordSRV) record).getTarget(), ((RecordSRV) record).getPort()));
+        }
+        return list;
     }
 
     @Override

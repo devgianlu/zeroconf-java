@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,7 +47,7 @@ public final class DiscoveredService {
 
     @NotNull
     public List<Record> getRelatedRecords() {
-        return Collections.unmodifiableList(relatedRecords);
+        return new ArrayList<>(relatedRecords);
     }
 
     @NotNull

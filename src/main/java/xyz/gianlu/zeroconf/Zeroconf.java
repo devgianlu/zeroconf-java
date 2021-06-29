@@ -574,8 +574,8 @@ public final class Zeroconf implements Closeable {
         }
 
         @NotNull
-        public Collection<DiscoveredService> getServices() {
-            return Collections.unmodifiableCollection(services);
+        public List<DiscoveredService> getServices() {
+            return new ArrayList<>(services);
         }
 
         @Nullable
